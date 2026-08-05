@@ -120,25 +120,7 @@ class SipClient : public Component {
 #ifdef USE_MICROPHONE
   void on_mic_data_(const std::vector<uint8_t> &data);
 #endif
-  // SDP / logs: based on which audio endpoints are wired.
-  // USE_MICROPHONE / USE_SPEAKER are set by ESPHome when any mic/speaker
-  // platform is in the build; pointers may still be null if this component
-  // did not take a reference (send-only / receive-only).
-  const char *media_direction_() const {
-#if defined(USE_MICROPHONE) && defined(USE_SPEAKER)
-    if (this->mic_ == nullptr)
-      return "recvonly";
-    if (this->speaker_ == nullptr)
-      return "sendonly";
-    return "sendrecv";
-#elif defined(USE_SPEAKER)
-    return "recvonly";
-#elif defined(USE_MICROPHONE)
-    return "sendonly";
-#else
-    return "inactive";
-#endif
-  }
+  const char *media_direction_() const { return "sendrecv"; }
 
   void set_state_(SipState s);
   std::string extract_caller_(const SipMessage &m);

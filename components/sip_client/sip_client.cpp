@@ -706,27 +706,24 @@ void SipClient::start_media_() {
   this->rtp_.set_dtmf_payload_type(this->remote_dtmf_pt_);
   this->rtp_.set_remote(this->remote_rtp_ip_, this->remote_rtp_port_);
 #ifdef USE_SPEAKER
-  if (this->speaker_ != nullptr) {
-    this->rtp_.set_on_audio([this](const int16_t *pcm, size_t n) {
-      if (this->half_duplex_ && this->talking_) return;  // speaker is off while transmitting
+  this->rtp_.set_on_audio([this](const int16_t *pcm, size_t n) {
+    if (this->speaker_ == nullptr) return;
+    if (this->half_duplex_ && this->talking_) return;  // speaker is off while transmitting
 
-      // start_speaker_() sets the stream to the codec pcm_rate, so no resample here.
-      if (this->channel_ == SIP_CH_STEREO) {
-        // Duplicate mono samples to stereo (L/R) for stereo mixers/speakers (e.g. Voice PE).
-        std::vector<int16_t> stereo(n * 2);
-        for (size_t i = 0; i < n; i++) {
-          stereo[i * 2] = pcm[i];
-          stereo[i * 2 + 1] = pcm[i];
-        }
-        this->speaker_->play(reinterpret_cast<const uint8_t *>(stereo.data()), stereo.size() * sizeof(int16_t));
-      } else {
-        // Mono output (e.g. es8311): push samples as-is.
-        this->speaker_->play(reinterpret_cast<const uint8_t *>(pcm), n * sizeof(int16_t));
+    // start_speaker_() sets the stream to the codec pcm_rate, so no resample here.
+    if (this->channel_ == SIP_CH_STEREO) {
+      // Duplicate mono samples to stereo (L/R) for stereo mixers/speakers (e.g. Voice PE).
+      std::vector<int16_t> stereo(n * 2);
+      for (size_t i = 0; i < n; i++) {
+        stereo[i * 2] = pcm[i];
+        stereo[i * 2 + 1] = pcm[i];
       }
-    });
-  } else {
-    this->rtp_.set_on_audio({});  // send-only: skip G.711 decode in receive_()
-  }
+      this->speaker_->play(reinterpret_cast<const uint8_t *>(stereo.data()), stereo.size() * sizeof(int16_t));
+    } else {
+      // Mono output (e.g. es8311): push samples as-is.
+      this->speaker_->play(reinterpret_cast<const uint8_t *>(pcm), n * sizeof(int16_t));
+    }
+  });
 #else
   this->rtp_.set_on_audio({});  // no speaker in build: skip G.711 decode in receive_()
 #endif

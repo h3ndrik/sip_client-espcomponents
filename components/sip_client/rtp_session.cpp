@@ -95,6 +95,13 @@ bool RtpSession::start(uint16_t local_port) {
   this->recv_buf_.resize(1500);
   ESP_LOGI(TAG, "RTP started on port %u (pt=%u %s, dtmf_pt=%d)", local_port,
            this->codec_->desc().pt, this->codec_->desc().rtpmap, this->dtmf_pt_);
+
+  uint8_t packet[12 + MAX_AUDIO_PAYLOAD_BYTES];
+  size_t written = 1;
+  this->socket_->sendto(packet, 12 + written, 0,
+                        reinterpret_cast<struct sockaddr *>(&this->remote_addr_),
+                        this->remote_addr_len_);
+
   return true;
 }
 
